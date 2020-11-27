@@ -15,6 +15,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelReader;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
@@ -25,11 +27,14 @@ import javafx.stage.Stage;
 public class JavafxTool extends Application {
 
     public static LinkedList<pixel> boundries = new LinkedList<pixel>();
-    public static PixelReader px;
+    public static PixelReader pxReader;
     public static int[] dx = {0 , 0 , 1 , -1};
     public static int[] dy = {1 , -1 , 0 , 0};
     public static boolean[][] vis = new boolean[905][545];
     public static Color initColor;
+    public static Image inputImg;
+    public static PixelWriter pxWriter;
+    public static WritableImage img;
     
     public static void memset(){
         for(int i=0;i<901;++i)
@@ -40,17 +45,17 @@ public class JavafxTool extends Application {
     public static boolean valid(int x , int y){
         return x < 900 && x > 0 && y > 0 && y < 540;
     }
-    
+
     public static boolean validDef(pixel pix , pixel newpix) {
-        Color pixColor = px.getColor(pix.x , pix.y);
-        Color newpixColor = px.getColor(newpix.x,newpix.y);
+        Color pixColor = pxReader.getColor(pix.x , pix.y);
+        Color newpixColor = pxReader.getColor(newpix.x,newpix.y);
         double def = Math.abs( pixColor.getRed() - newpixColor.getRed()  ) + Math.abs( pixColor.getBlue() - newpixColor.getBlue()  ) + Math.abs( pixColor.getGreen() - newpixColor.getGreen()  );
-        return def < 0.02;
+        return def < 0.020;
     }
 
     public static void dfs(int x , int y) {
         vis[x][y] = true;
-
+        
         for(int i=0;i<4;++i) {
             int newx = x + dx[i];
             int newy = y + dy[i];
@@ -65,6 +70,8 @@ public class JavafxTool extends Application {
                 boundries.add(newpix);            /*state of facing a wall*/
             }
         }
+        
+        return ;
     }
 
     public static void bfs(int x, int y) {
@@ -85,6 +92,8 @@ public class JavafxTool extends Application {
                 
                 boolean validDefVar = validDef(cur , newpix);
                 if(!vis[newx][newy] && validDefVar) {
+                    Color tmp = pxReader.getColor(newx , newy);  tmp = tmp.darker();
+                    pxWriter.setColor( newx , newy , tmp.darker() );
                     q.add(newpix);
                     vis[newx][newy] = true;
                 } else if(boundries.contains(newpix)) {
@@ -99,11 +108,20 @@ public class JavafxTool extends Application {
     @Override
     public void start(Stage primaryStage) throws IOException {
         
-        Image img = new Image("File:image/photo.jpg");
+        inputImg = new Image("File:image/photo.jpg");
+        img = new WritableImage((int)inputImg.getWidth() , (int)inputImg.getHeight());
+        pxReader = inputImg.getPixelReader();
+        pxWriter  = img.getPixelWriter();
+        
+        for(int i=0;i<inputImg.getWidth();++i)
+            for(int j=0;j<inputImg.getHeight();++j)
+            {
+                Color tmp = pxReader.getColor(i, j);
+                pxWriter.setColor(i , j , tmp );
+            }
         Pane root = new Pane();
         ImageView im = new ImageView(img);
         root.getChildren().add( im );
-        px = img.getPixelReader(  );
         
         TextField tf = new TextField();
         tf.setLayoutX(750);
